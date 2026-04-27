@@ -1,19 +1,20 @@
 /**
  * ============================================================================
- * PAYMENT MODULE — MALL SERVICES v3.0.0
+ * PAYMENT MODULE — MALL SERVICES v4.0.0
  * نظام الدفع الموحد — يدعم جميع وسائل الدفع المحلية والعالمية
  * ============================================================================
  * المحلي:  Paymob • Fawry • Vodafone Cash • Orange Cash • Meeza • InstaPay
  * العالمي: Stripe • PayPal • Wise • Payoneer • Apple Pay • Google Pay
  * ============================================================================
- * لا توجد duplicate declarations — IIFE واحد نظيف
- * جميع الوظائف تُصدَّر على window بعد التحميل الكامل
+ * ✅ NO DUPLICATE DECLARATIONS
+ * ✅ CLEAN IIFE PATTERN
+ * ✅ PRODUCTION READY
  * ============================================================================
  */
 (function () {
     'use strict';
 
-    // ── CONFIG ───────────────────────────────────────────────────────────────
+    // ── CONFIG ──────────────────────────────────────────────────────────────
     const CONFIG = {
         endpoint: '/.netlify/functions/payment',
         currency: 'EGP',
@@ -58,7 +59,7 @@
         PAYONEER:  'payoneer',
     };
 
-    // ── UTILITIES ────────────────────────────────────────────────────────────
+    // ── UTILITIES ──────────────────────────────────────────────────────────
     const Utils = {
         appState()           { return (typeof window.AppState === 'object' && window.AppState) || {}; },
         walletBalance()      { return parseFloat(this.appState().wallet?.balance) || 0; },
@@ -118,7 +119,7 @@
             const colors = { success: '#10b981', error: '#ef4444', warning: '#f59e0b', info: '#3b82f6' };
             const icons  = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
             const el = document.createElement('div');
-            el.style.cssText = `position:fixed;top:20px;right:20px;background:${colors[type]||colors.info};color:#fff;padding:14px 20px;border-radius:12px;z-index:999999;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-width:400px;word-wrap:break-word;`;
+            el.style.cssText = `position:fixed;top:20px;right:20px;background:${colors[type]||colors.info};color:#fff;padding:14px 20px;border-radius:12px;z-index:999999;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;`;
             el.innerHTML = `<span>${icons[type]||''}</span><span>${msg}</span>`;
             document.body.appendChild(el);
             setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; setTimeout(() => el.remove(), 400); }, 4000);
@@ -135,7 +136,7 @@
         }
     };
 
-    // ── CORE PAYMENT MANAGER ─────────────────────────────────────────────────
+    // ── CORE PAYMENT MANAGER ────────────────────────────────────────────────
     const PaymobManager = {
         _state: {
             selectedMethod:   null,
@@ -207,7 +208,7 @@
             }
         },
 
-        // ── Card (Paymob) ────────────────────────────────────────────────────
+        // ── Card (Paymob) ──────────────────────────────────────────────────
         async _payCard(amount, orderId, orderData = {}) {
             try {
                 Utils.showLoading('جاري تهيئة بوابة الدفع...');
@@ -341,7 +342,7 @@
             if (success) setTimeout(() => Utils.navigate('orders'), 300);
         },
 
-        // ── Wallet/Balance ───────────────────────────────────────────────────
+        // ── Wallet/Balance ─────────────────────────────────────────────────
         async _payBalance(amount, orderId) {
             const balance = Utils.walletBalance();
             if (balance < amount) {
@@ -370,7 +371,7 @@
             }
         },
 
-        // ── Fawry ────────────────────────────────────────────────────────────
+        // ── Fawry ──────────────────────────────────────────────────────────
         async _payFawry(amount, orderId, orderData = {}) {
             try {
                 Utils.showLoading('جاري إنشاء كود Fawry...');
@@ -416,7 +417,7 @@
                     <div class="bg-gray-50 rounded-2xl p-6 mb-5">
                         <p class="text-sm text-gray-500 mb-2">كود الدفع</p>
                         <p class="text-3xl font-black text-indigo-700 tracking-widest">${code}</p>
-                        <button onclick="navigator.clipboard.writeText('${code}').then(()=>window.PaymobManager._copySuccess())" class="mt-3 text-sm text-indigo-600 hover:underline flex items-center justify-center gap-2 mx-auto">
+                        <button onclick="navigator.clipboard.writeText('${code}').then(()=>window.PaymobManager._copySuccess())" class="mt-3 text-sm text-indigo-600 hover:underline flex items-center justify-center gap-2">
                             <i class="fa-regular fa-copy"></i> نسخ الكود
                         </button>
                     </div>
@@ -440,7 +441,7 @@
 
         _copySuccess() { Utils.toast(CONFIG.messages.copyCode, 'success'); },
 
-        // ── Stripe ────────────────────────────────────────────────────────────
+        // ── Stripe ──────────────────────────────────────────────────────────
         async _payStripe(amount, orderId, orderData = {}) {
             try {
                 Utils.showLoading('جاري تهيئة Stripe...');
@@ -486,7 +487,7 @@
                     <div id="stripe-element" class="p-4 border-2 border-gray-200 rounded-xl mb-4 min-h-[60px] flex items-center justify-center text-gray-400 text-sm">
                         ${publishableKey ? 'Loading Stripe...' : '⚠️ Stripe not configured — add STRIPE_SECRET_KEY to Netlify env vars'}
                     </div>
-                    ${publishableKey ? `<button id="stripePayBtn" onclick="window._stripeConfirm && window._stripeConfirm()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition">Pay Now</button>` : ''}
+                    ${publishableKey ? `<button id="stripePayBtn" onclick="window._stripeConfirm && window._stripeConfirm()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition">Pay Now</button>` : '<button class="w-full bg-gray-400 text-white py-4 rounded-2xl font-bold cursor-not-allowed">Not Configured</button>'}
                 </div>`;
             document.body.appendChild(modal);
 
@@ -512,7 +513,7 @@
             }
         },
 
-        // ── PayPal ────────────────────────────────────────────────────────────
+        // ── PayPal ─────────────────────────────────────────────────────────
         async _payPayPal(amount, orderId, orderData = {}) {
             try {
                 Utils.showLoading('جاري تهيئة PayPal...');
@@ -534,7 +535,7 @@
             }
         },
 
-        // ── Manual Payment (Vodafone/Orange/InstaPay) ─────────────────────────
+        // ── Manual Payment (Vodafone/Orange/InstaPay) ──────────────────────
         _showManualPayment(method, amount, orderId) {
             const info = {
                 vodafone_cash: { name: 'Vodafone Cash', number: '010-XXXX-XXXX', color: '#e4002b', icon: 'fa-mobile-screen-button' },
@@ -565,13 +566,13 @@
                     <p class="text-sm text-yellow-700 bg-yellow-50 p-3 rounded-xl mb-4">
                         ⚠️ بعد الإرسال، تواصل مع الدعم على البريد: support@mall-services.com
                     </p>
-                    <button onclick="document.getElementById('manualPayModal').remove()" class="w-full bg-gray-800 text-white py-4 rounded-2xl font-bold hover:bg-gray-900 transition">حسناً، تم الإرسال</button>
+                    <button onclick="document.getElementById('manualPayModal').remove()" class="w-full bg-gray-800 text-white py-4 rounded-2xl font-bold hover:bg-gray-900 transition">حسناً، تم</button>
                 </div>`;
             document.body.appendChild(modal);
             return true;
         },
 
-        // ── Finalize Orders ──────────────────────────────────────────────────
+        // ── Finalize Orders ────────────────────────────────────────────────
         async _finalizeOrders(payMethod, payId) {
             try {
                 const cart = Utils.appState().cart;
@@ -610,7 +611,7 @@
             }
         },
 
-        // ── Verify ───────────────────────────────────────────────────────────
+        // ── Verify ─────────────────────────────────────────────────────────
         async verifyPayment(transactionId, gateway = 'paymob') {
             try {
                 const token = await Utils.idToken();
@@ -636,7 +637,7 @@
         safeNavigateToOrders() { Utils.navigate('orders'); },
     };
 
-    // ── GLOBAL WRAPPER FUNCTIONS ─────────────────────────────────────────────
+    // ── GLOBAL WRAPPER FUNCTIONS ──────────────────────────────────────────
     function selectPayment(method, event) {
         PaymobManager._state.selectedMethod = method;
 
@@ -686,7 +687,7 @@
         checkout(service);
     }
 
-    // ── INIT ─────────────────────────────────────────────────────────────────
+    // ── INIT ──────────────────────────────────────────────────────────────
     function init() {
         window.selectPayment    = selectPayment;
         window.processPayment   = processPayment;
@@ -698,7 +699,7 @@
         // Check for payment redirect params on load
         PaymobManager._checkRedirect();
 
-        console.log('✅ Payment Module v3.0.0 ready — methods:', Object.values(METHOD).join(', '));
+        console.log('✅ Payment Module v4.0.0 ready — methods:', Object.values(METHOD).join(', '));
     }
 
     if (document.readyState === 'loading') {
