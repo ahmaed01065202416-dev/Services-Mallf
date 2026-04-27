@@ -1,0 +1,176 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper Functions ──────────────────────────────────────────────────
+    function isAuth()           { return request.auth != null; }
+    function isOwner(uid)       { return isAuth() && request.auth.uid == uid; }
+    function isAdmin()          { return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true; }
+    function isProvider()       { return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'provider'; }
+    function validString(s, max){ return s is string && s.size() > 0 && s.size() <= max; }
+    function validAmount(a)     { return a is number && a > 0 && a <= 500000; }
+
+    // ── Users ─────────────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isAuth();
+      allow create: if isOwner(userId) && validString(request.resource.data.email, 200);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── Services ──────────────────────────────────────────────────────────
+    match /services/{serviceId} {
+      allow read: if true; // Public listing
+      allow create: if isProvider()
+                    && validString(request.resource.data.title, 200)
+                    && validAmount(request.resource.data.price)
+                    && request.resource.data.sellerId == request.auth.uid;
+      allow update: if isAdmin()
+                    || (isAuth() && resource.data.sellerId == request.auth.uid);
+      allow delete: if isAdmin()
+                    || (isAuth() && resource.data.sellerId == request.auth.uid);
+    }
+
+    // ── Orders ────────────────────────────────────────────────────────────
+    match /orders/{orderId} {
+      allow read: if isAuth() && (
+        resource.data.buyerId  == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuth()
+                    && request.resource.data.buyerId == request.auth.uid
+                    && validAmount(request.resource.data.amount);
+      allow update: if isAuth() && (
+        resource.data.buyerId  == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ── Reviews ───────────────────────────────────────────────────────────
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuth()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.rating >= 1
+                    && request.resource.data.rating <= 5;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin() || (isAuth() && resource.data.userId == request.auth.uid);
+    }
+
+    // ── Notifications ─────────────────────────────────────────────────────
+    match /notifications/{notifId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth();
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
+    }
+
+    // ── Messages / Conversations ──────────────────────────────────────────
+    match /conversations/{convId} {
+      allow read: if isAuth() && (
+        convId.matches('.*' + request.auth.uid + '.*')
+      );
+      allow create: if isAuth();
+      allow update: if isAuth();
+
+      match /messages/{msgId} {
+        allow read: if isAuth();
+        allow create: if isAuth() && request.resource.data.senderId == request.auth.uid;
+      }
+    }
+
+    match /messages/{msgId} {
+      allow read, write: if isAuth();
+    }
+
+    // ── Wallets ───────────────────────────────────────────────────────────
+    match /wallets/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin(); // Only server/admin can write wallet
+    }
+
+    // ── Transactions ──────────────────────────────────────────────────────
+    match /transactions/{txId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // ── Payments ──────────────────────────────────────────────────────────
+    match /payments/{payId} {
+      allow read: if isAuth() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow create: if isAuth();
+      allow update, delete: if isAdmin();
+    }
+
+    // ── Platform Revenue (Admin only) ─────────────────────────────────────
+    match /platform_revenue/{revId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ── Subscriptions ─────────────────────────────────────────────────────
+    match /subscriptions/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ── Featured Listings ─────────────────────────────────────────────────
+    match /featured_listings/{featId} {
+      allow read: if true;
+      allow write: if isAuth();
+    }
+
+    // ── Ads ───────────────────────────────────────────────────────────────
+    match /ads/{adId} {
+      allow read: if true;
+      allow create: if isAuth();
+      allow update, delete: if isAdmin() || (isAuth() && resource.data.ownerId == request.auth.uid);
+    }
+
+    // ── Boosts ────────────────────────────────────────────────────────────
+    match /boosts/{boostId} {
+      allow read: if true;
+      allow create: if isAuth() && request.resource.data.sellerId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // ── Verifications ─────────────────────────────────────────────────────
+    match /verifications/{verId} {
+      allow read: if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+    }
+
+    // ── Promo Codes ───────────────────────────────────────────────────────
+    match /promo_codes/{promoId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // ── Affiliates ────────────────────────────────────────────────────────
+    match /affiliates/{affId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update: if isAdmin();
+    }
+
+    // ── Categories ────────────────────────────────────────────────────────
+    match /categories/{catId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Reports ───────────────────────────────────────────────────────────
+    match /reports/{repId} {
+      allow read: if isAdmin();
+      allow create: if isAuth();
+      allow update, delete: if isAdmin();
+    }
+  }
+}

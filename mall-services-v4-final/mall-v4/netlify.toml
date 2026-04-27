@@ -1,0 +1,94 @@
+# ============================================================================
+# NETLIFY CONFIG — MALL SERVICES v4.0 — Production Ready
+# ============================================================================
+
+[build]
+  publish   = "."
+  functions = "netlify/functions"
+  command   = "npm install && npm run build:css && cd netlify/functions && npm install --omit=dev"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# ── REDIRECTS ────────────────────────────────────────────────────────────────
+
+[[redirects]]
+  from = "/api/payment"
+  to   = "/.netlify/functions/payment"
+  status = 200
+
+[[redirects]]
+  from = "/api/payment/*"
+  to   = "/.netlify/functions/payment"
+  status = 200
+
+[[redirects]]
+  from = "/api/notifications"
+  to   = "/.netlify/functions/firebase-notifications"
+  status = 200
+
+[[redirects]]
+  from = "/api/subscriptions"
+  to   = "/.netlify/functions/subscriptions"
+  status = 200
+
+[[redirects]]
+  from = "/api/escrow"
+  to   = "/.netlify/functions/escrow-release"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to   = "/index.html"
+  status = 200
+
+# ── SECURITY HEADERS ─────────────────────────────────────────────────────────
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options            = "SAMEORIGIN"
+    X-Content-Type-Options     = "nosniff"
+    X-XSS-Protection           = "1; mode=block"
+    Referrer-Policy            = "strict-origin-when-cross-origin"
+    Strict-Transport-Security  = "max-age=31536000; includeSubDomains; preload"
+    Permissions-Policy         = "camera=(), microphone=(), geolocation=(), payment=(self 'https://accept.paymob.com' 'https://js.stripe.com' 'https://www.paypal.com')"
+    Content-Security-Policy    = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.gstatic.com https://www.googleapis.com https://accept.paymob.com https://js.stripe.com https://www.paypal.com https://www.paypalobjects.com https://www.googletagmanager.com https://www.google-analytics.com https://apis.google.com blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https: http:; frame-src https://accept.paymob.com https://js.stripe.com https://www.paypal.com https://accounts.google.com https://mall-services.firebaseapp.com; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.firebaseio.com https://*.cloudfunctions.net https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com wss://*.firebaseio.com https://accept.paymob.com https://api.stripe.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://api.transferwise.com https://api.wise.com https://www.google-analytics.com https://analytics.google.com https://ipapi.co https://*.netlify.app https://*.netlify.com; object-src 'none'; base-uri 'self'; form-action 'self' https://accept.paymob.com https://www.paypal.com;"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=3600"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[dev]
+  command    = "python3 -m http.server 3000"
+  port       = 8888
+  targetPort = 3000
+  publish    = "."
+
+# ── ENV VARS (add in Netlify Dashboard → Site Settings → Env Vars) ────────────
+# PAYMOB_API_KEY
+# PAYMOB_INTEGRATION_CARD
+# PAYMOB_INTEGRATION_WALLET
+# PAYMOB_INTEGRATION_FAWRY
+# PAYMOB_IFRAME_ID
+# PAYMOB_HMAC_SECRET
+# STRIPE_SECRET_KEY
+# STRIPE_PUBLISHABLE_KEY
+# STRIPE_WEBHOOK_SECRET
+# PAYPAL_CLIENT_ID
+# PAYPAL_CLIENT_SECRET
+# PAYPAL_MODE=live
+# FIREBASE_ADMIN_SDK={"type":"service_account",...}
+# PLATFORM_FEE_PERCENT=5
+# URL=https://mall-services1.netlify.app
